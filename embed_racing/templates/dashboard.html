@@ -1,0 +1,201 @@
+{% extends "structure/base.html" %}
+{% block title %}Embed Racing Dashboard{% endblock %}
+{% block content %}
+  <style>
+      body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 20px;
+          background-color: #f4f4f4;
+      }
+
+      h1 {
+          text-align: center;
+          font-size: 24px;
+          margin-bottom: 20px;
+      }
+
+      h2 {
+          font-size: 20px;
+          margin-bottom: 15px;
+      }
+
+      .table-wrapper {
+          max-width: 100%;
+          overflow-x: auto;
+      }
+
+      table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 20px;
+          background-color: #fff;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          table-layout: auto;
+      }
+
+      th, td {
+          border: 1px solid black;
+          padding: 12px 15px;
+          text-align: left;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+      }
+
+      th {
+          background-color: #4CAF50;
+          color: white;
+      }
+
+      tr:nth-child(even) {
+          background-color: #f9f9f9;
+      }
+
+      tr:nth-child(odd) {
+          background-color: #f1f1f1;
+      }
+
+      ul {
+          padding-left: 20px;
+      }
+
+      .relay-warning {
+          background-color: red;
+          color: white;
+          font-weight: bold;
+          padding: 8px;
+      }
+
+      .collapsible {
+          background-color: #333;
+          color: white;
+          font-weight: bold;
+          cursor: pointer;
+          padding: 10px;
+          margin-bottom: 10px;
+          text-align: left;
+      }
+
+      .collapsible:hover {
+          background-color: #555;
+      }
+
+      .collapsible-content {
+          display: none;
+          margin-bottom: 15px;
+      }
+
+      .collapsible.active + .collapsible-content {
+          display: block;
+      }
+
+      .action-buttons {
+          margin-bottom: 20px;
+          display: flex;
+          justify-content: space-between;
+      }
+
+      .btn {
+          display: inline-block;
+          padding: 10px 15px;
+          background-color: #007BFF;
+          color: white;
+          text-decoration: none;
+          border-radius: 5px;
+      }
+
+      .btn:hover {
+          background-color: #0056b3;
+      }
+  </style>
+
+  <nav>
+      <a href="/dashboard">Home</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="{% url 'embed_racing:generate_links' %}">Generate Links</a>
+  </nav>
+
+  <h1>Embed Racing Dashboard</h1>
+
+  <!-- Add action buttons for other views -->
+  <div class="action-buttons">
+      <a href="{% url 'embed_racing:generate_links' %}" class="btn">
+          <i class="fas fa-link"></i> Generate Links
+      </a>
+      <a href="/dashboard" class="btn">
+          <i class="fas fa-chart-bar"></i> View Dashboard
+      </a>
+      <!-- Example button for tracking an embed -->
+      <!-- Note: You may need to provide a specific 'unique_id' for tracking -->
+      <a href="{% url 'embed_racing:track_embed' unique_id='example_id' %}" class="btn">
+          <i class="fas fa-eye"></i> Track Example Embed
+      </a>
+  </div>
+
+  <h2>Dashboard Overview</h2>
+  <p>Total Logs: {{ total_logs }}</p>
+  <p>Unique IPs: {{ unique_ips }}</p>
+
+  {% if logs %}
+      <h2>Tracked Logs</h2>
+
+      {% for unique_id, group in logs.items %}
+      <div class="collapsible" onclick="toggleGroup('group-{{ unique_id }}')">
+          Group: {{ group.0.group_name|default:"Unnamed Group" }} - Unique ID: {{ unique_id }}
+          
+          <form action="/toggle_group_visibility/{{ unique_id }}" method="POST" style="display:inline;">
+              {% csrf_token %}
+              {% if group.0.hidden %}
+                  <button type="submit">Unhide Group</button>
+              {% else %}
+                  <button type="submit">Hide Group</button>
+              {% endif %}
+          </form>
+      </div>
+      <div id="group-{{ unique_id }}" class="collapsible-content">
+          <div class="table-wrapper">
+              <table>
+                  <thead>
+                      <tr>
+                          <th>Request Count</th>
+                          <th>Details</th>
+                          <th>Geolocation</th>
+                          <th>Relay Detection</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {% for log in group %}
+                      <tr class="{% if log.ip_address in suspicious_ips %}relay-warning{% else %}normal{% endif %}">
+                          <td>{{ group|length }}</td>
+                          <td>IP: {{ log.ip_address }}, User-Agent: {{ log.user_agent }}, Timestamp: {{ log.timestamp }}</td>
+                          <td>Geolocation: {{ log.geolocation }}</td>
+                          <td>
+                              {% if log.ip_address in suspicious_ips %}
+                              <span class="relay-warning">Potential Relay Detected</span>
+                              {% else %}
+                              No Relay Detected
+                              {% endif %}
+                          </td>
+                      </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+      </div>
+      {% endfor %}
+  {% else %}
+      <p>No logs found. Please generate links and post them in Discord to track activity.</p>
+  {% endif %}
+
+  <script>
+      function toggleGroup(groupId) {
+          var group = document.getElementById(groupId);
+          if (group.style.display === "block" || group.style.display === "") {
+              group.style.display = "none";
+          } else {
+              group.style.display = "block";
+          }
+      }
+  </script>
+{% endblock %}
