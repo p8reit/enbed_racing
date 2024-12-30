@@ -7,4 +7,4 @@ class EmbedRacingConfig(AppConfig):
 
 
 def ready(self):
-        import embed_racing.auth_hooks  # Ensures the menu hooks are registered when the app is ready
+        import enbed_racing.auth_hooks  # Ensures the menu hooks are registered when the app is ready
